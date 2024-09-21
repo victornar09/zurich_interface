@@ -92,7 +92,13 @@ def procesar_campos(request):
                 break
 
             logica = request.POST.get(f'filtroLogica-{i}', 'AND')  # Por defecto será AND
-            filtros.append(f"{logica} [{filtro_campo}] {filtro_comparador} '{filtro_valor}'")
+            
+            # Solo agrega la lógica si no es el primer filtro
+            if filtros:
+                filtros.append(f"{logica} [{filtro_campo}] {filtro_comparador} '{filtro_valor}'")
+            else:
+                filtros.append(f"[{filtro_campo}] {filtro_comparador} '{filtro_valor}'")  # Sin lógica para el primer filtro
+
             i += 1
 
         # Construir la consulta SQL
@@ -101,7 +107,7 @@ def procesar_campos(request):
         consulta = f"SELECT TOP 10 {campos} FROM DM_ESTRAYFINA.{tabla}"
 
         if filtros:
-            consulta += " WHERE " + " ".join(filtros).replace(" AND", "AND").replace(" OR", "OR")
+            consulta += " WHERE " + " ".join(filtros)
 
         print(consulta)
 
