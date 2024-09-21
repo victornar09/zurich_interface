@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zurich Interface</title>
+    <style>
+        .select-container {
+            width: 300px; /* Ancho del contenedor */
+            position: relative;
+        }
+        #tablaSelect, #campoSelect {
+            width: 100%; /* Ocupa todo el ancho del contenedor */
+            max-height: 150px; /* Altura máxima para que aparezca el scroll */
+            overflow-y: auto; /* Habilita el scroll vertical */
+        }
+        #searchInput {
+            width: 100%; /* Ocupa todo el ancho del contenedor */
+            padding: 5px; /* Espaciado interno */
+            box-sizing: border-box; /* Incluye el padding en el ancho total */
+            margin-bottom: 5px; /* Espacio entre el input y el select */
+        }
+        .selected-fields {
+            margin-top: 10px; /* Espacio entre el select y el área de selección */
+            border: 1px solid #ccc; /* Borde del contenedor */
+            padding: 5px; /* Espaciado interno */
+            max-height: 100px; /* Altura máxima */
+            overflow-y: auto; /* Habilita el scroll vertical */
+        }
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px;
+            border-bottom: 1px solid #ddd;
+        }
+    </style>
+    <script>
+        function filterTables() {
+            const input = document.getElementById("searchInput");
+            const filter = input.value.toLowerCase();
+            const select = document.getElementById("tablaSelect");
+            const options = select.options;
+
+            for (let i = 0; i < options.length; i++) {
+                const txtValue = options[i].text.toLowerCase();
+                options[i].style.display = txtValue.includes(filter) ? "" : "none";
+            }
+        }
+
+        function addSelectedFields() {
+            const select = document.getElementById("campoSelect");
+            const selectedFieldsContainer = document.getElementById("selectedFields");
+
+            for (let i = 0; i < select.options.length; i++) {
+                if (select.options[i].selected) {
+                    // Crear un nuevo elemento de lista para el campo seleccionado
+                    const listItem = document.createElement("div");
+                    listItem.className = "list-item";
+                    listItem.textContent = select.options[i].value;
+
+                    // Crear un botón para eliminar el campo de la lista
+                    const removeButton = document.createElement("button");
+                    removeButton.textContent = "Eliminar";
+                    removeButton.onclick = function() {
+                        selectedFieldsContainer.removeChild(listItem);
+                    };
+
+                    listItem.appendChild(removeButton);
+                    selectedFieldsContainer.appendChild(listItem);
+                }
+            }
+
+            // Deseleccionar los campos después de agregarlos
+            select.selectedIndex = -1;
+        }
+    </script>
+</head>
+<body>
+    <h1>Tablas en la base de datos</h1>
+    <form method="POST" action="{% url 'consultar_campos' %}">
+        {% csrf_token %}
+        <div class="select-container">
+            <input type="text" id="searchInput" onkeyup="filterTables()" placeholder="Buscar tablas...">
+            <select id="tablaSelect" name="tabla" onchange="this.form.submit()">
+                {% for tabla in tablas %}
+                    <option value="{{ tabla }}">{{ tabla }}</option>
+                {% empty %}
+                    <option value="">No hay tablas disponibles.</option>
+                {% endfor %}
+            </select>
+        </div>
+    </form>
+
+    <!-- {% if campos %}
+    <h2>Selecciona los campos de la tabla: {{ tabla }}</h2>
+    <form method="POST" action="{% url 'procesar_campos' %}">
+        {% csrf_token %}
+        <input type="hidden" name="tabla" value="{{ tabla }}">
+        <div class="select-container">
+            <h3>Selecciona los campos:</h3>
+            <ul id="campoSelect">
+                {% for campo in campos %}
+                    <li>
+                        <label>
+                            <input type="checkbox" name="campos" value="{{ campo }}">
+                            {{ campo }}
+                        </label>
+                    </li>
+                {% empty %}
+                    <li>No hay campos disponibles.</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <button type="submit">Procesar Selección y Exportar CSV</button>
+    </form>
+{% endif %} -->
+{% if campos %}
+<h2>Selecciona los campos de la tabla: {{ tabla }}</h2>
+<form method="POST" action="{% url 'procesar_campos' %}">
+    {% csrf_token %}
+    <input type="hidden" name="tabla" value="{{ tabla }}">
+    <div class="select-container">
+        <h3>Selecciona los campos:</h3>
+        <ul id="campoSelect">
+            {% for campo in campos %}
+                <li>
+                    <label>
+                        <input type="checkbox" name="campos" value="{{ campo }}">
+                        {{ campo }}
+                    </label>
+                </li>
+            {% empty %}
+                <li>No hay campos disponibles.</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <!-- Contenedor para filtros (inicialmente oculto) -->
+    <div id="filtros" style="display: none;">
+        <h3>Filtros:</h3>
+    </div>
+
+    <button type="button" onclick="agregarFiltro()">Agregar Filtro</button>
+
+    <button type="submit">Procesar Selección y Exportar CSV</button>
+</form>
+
+<script>
+    let filtroCount = 0;  // Inicializa filtroCount en 0
+
+    function agregarFiltro() {
+        // Mostrar el contenedor de filtros la primera vez que se llama a la función
+        if (filtroCount === 0) {
+            document.getElementById("filtros").style.display = "block";
+        }
+
+        filtroCount++;
+        const filtrosContainer = document.getElementById("filtros");
+
+        const nuevoFiltro = document.createElement("div");
+        nuevoFiltro.className = "filtro";
+        nuevoFiltro.id = `filtro-${filtroCount}`;
+
+        nuevoFiltro.innerHTML = `
+            <select name="filtroLogica-${filtroCount}" ${filtroCount === 1 ? 'style="display: none;"' : ''}>
+                <option value="AND">AND</option>
+                <option value="OR">OR</option>
+            </select>
+            <select name="filtroCampo-${filtroCount}">
+                <option value="">Seleccionar campo</option>
+                {% for campo in campos %}
+                    <option value="{{ campo }}">{{ campo }}</option>
+                {% endfor %}
+            </select>
+            <select name="filtroComparador-${filtroCount}">
+                <option value="=">=</option>
+                <option value="<"><</option>
+                <option value=">">></option>
+                <option value="<>"><> (diferente)</option>
+                <option value="LIKE">LIKE</option>
+            </select>
+            <input type="text" name="filtroValor-${filtroCount}" placeholder="Valor a filtrar">
+            <button type="button" onclick="removerFiltro(this)">Eliminar</button>
+        `;
+
+        filtrosContainer.appendChild(nuevoFiltro);
+    }
+
+    function removerFiltro(button) {
+        const filtroDiv = button.parentElement;
+        filtroDiv.remove();
+        filtroCount--;  // Decrementa el contador si se elimina un filtro
+    }
+</script>
+{% endif %}
+
+</body>
+</html>
