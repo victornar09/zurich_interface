@@ -4,37 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zurich Interface</title>
-    <style>
-        .select-container {
-            width: 300px; /* Ancho del contenedor */
-            position: relative;
-        }
-        #tablaSelect, #campoSelect {
-            width: 100%; /* Ocupa todo el ancho del contenedor */
-            max-height: 150px; /* Altura máxima para que aparezca el scroll */
-            overflow-y: auto; /* Habilita el scroll vertical */
-        }
-        #searchInput {
-            width: 100%; /* Ocupa todo el ancho del contenedor */
-            padding: 5px; /* Espaciado interno */
-            box-sizing: border-box; /* Incluye el padding en el ancho total */
-            margin-bottom: 5px; /* Espacio entre el input y el select */
-        }
-        .selected-fields {
-            margin-top: 10px; /* Espacio entre el select y el área de selección */
-            border: 1px solid #ccc; /* Borde del contenedor */
-            padding: 5px; /* Espaciado interno */
-            max-height: 100px; /* Altura máxima */
-            overflow-y: auto; /* Habilita el scroll vertical */
-        }
-        .list-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 5px;
-            border-bottom: 1px solid #ddd;
-        }
-    </style>
+    <link rel="stylesheet" type="text/css" href="css/normalize.css">
+    <link rel="stylesheet" type="text/css" href="css/styles.css">
+
     <script>
         function filterTables() {
             const input = document.getElementById("searchInput");
@@ -92,29 +64,6 @@
         </div>
     </form>
 
-    <!-- {% if campos %}
-    <h2>Selecciona los campos de la tabla: {{ tabla }}</h2>
-    <form method="POST" action="{% url 'procesar_campos' %}">
-        {% csrf_token %}
-        <input type="hidden" name="tabla" value="{{ tabla }}">
-        <div class="select-container">
-            <h3>Selecciona los campos:</h3>
-            <ul id="campoSelect">
-                {% for campo in campos %}
-                    <li>
-                        <label>
-                            <input type="checkbox" name="campos" value="{{ campo }}">
-                            {{ campo }}
-                        </label>
-                    </li>
-                {% empty %}
-                    <li>No hay campos disponibles.</li>
-                {% endfor %}
-            </ul>
-        </div>
-        <button type="submit">Procesar Selección y Exportar CSV</button>
-    </form>
-{% endif %} -->
 {% if campos %}
 <h2>Selecciona los campos de la tabla: {{ tabla }}</h2>
 <form method="POST" action="{% url 'procesar_campos' %}">
