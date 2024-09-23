@@ -1,0 +1,29 @@
+.select-container {
+    width: 300px; /* Ancho del contenedor */
+    position: relative;
+}
+#tablaSelect, #campoSelect {
+    width: 100%; /* Ocupa todo el ancho del contenedor */
+    max-height: 150px; /* Altura máxima para que aparezca el scroll */
+    overflow-y: auto; /* Habilita el scroll vertical */
+}
+#searchInput {
+    width: 100%; /* Ocupa todo el ancho del contenedor */
+    padding: 5px; /* Espaciado interno */
+    box-sizing: border-box; /* Incluye el padding en el ancho total */
+    margin-bottom: 5px; /* Espacio entre el input y el select */
+}
+.selected-fields {
+    margin-top: 10px; /* Espacio entre el select y el área de selección */
+    border: 1px solid #ccc; /* Borde del contenedor */
+    padding: 5px; /* Espaciado interno */
+    max-height: 100px; /* Altura máxima */
+    overflow-y: auto; /* Habilita el scroll vertical */
+}
+.list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px;
+    border-bottom: 1px solid #ddd;
+}
