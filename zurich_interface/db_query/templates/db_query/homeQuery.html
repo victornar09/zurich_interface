@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zurich Interface</title>
 
-    {% load static %}
+    <!-- {% load static %}
     <link rel="stylesheet" type="text/css" href="{% static 'css/styles.css' %}">
-    <link rel="stylesheet" type="text/css" href="{% static 'css/normalize.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'css/normalize.css' %}"> -->
     
 
     <script>
@@ -146,6 +146,43 @@
     }
 </script>
 {% endif %}
+
+<!-- homeQuery.html -->
+
+<h2>Consultas Predefinidas</h2>
+<form method="POST" action="{% url 'procesar_consulta_predefinida' %}">
+    {% csrf_token %}
+    <div>
+        <label for="consultaSelect">Selecciona una consulta:</label>
+        <select id="consultaSelect" name="consulta" onchange="toggleParamFields()">
+            <option value="">Seleccionar consulta</option>
+            {% for consulta, valores in predefined_queries.items %}
+                {% with nombre=valores.0 query=valores.1 %}
+                    <option value="{{ consulta }}">{{ nombre }}</option>
+                {% endwith %}
+            {% endfor %}
+        </select>
+    </div>
+
+    <div id="paramFields" style="display:none;">
+        <label for="parametro1">Parametro 1:</label>
+        <input type="text" name="parametro1" required>
+
+        <label for="parametro2">Parametro 2:</label>
+        <input type="text" name="parametro2" required>
+    </div>
+
+    <button type="submit">Ejecutar Consulta</button>
+</form>
+
+<script>
+    function toggleParamFields() {
+        const select = document.getElementById("consultaSelect");
+        const paramFields = document.getElementById("paramFields");
+        paramFields.style.display = select.value ? "block" : "none";
+    }
+</script>
+
 
 </body>
 </html>

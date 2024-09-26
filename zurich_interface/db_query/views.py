@@ -6,6 +6,19 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
+# Modificar las consultas predefinidas para incluir nombres legibles
+PREDEFINED_QUERIES = {
+    'Consulta 1': ('Consulta 1 - Descripción', 'SELECT * FROM DM_ESTRAYFINA.Tabla1 WHERE campo1 = %s AND campo2 = %s'),
+    'Consulta 2': ('Consulta 2 - Descripción', 'SELECT * FROM DM_ESTRAYFINA.Tabla2 WHERE campoA = %s AND campoB = %s'),
+    'Consulta 3': ('Consulta 3 - Descripción', 'SELECT * FROM DM_ESTRAYFINA.Tabla3 WHERE campoX = %s AND campoY = %s'),
+    'Consulta 4': ('Consulta 4 - Descripción', 'SELECT * FROM DM_ESTRAYFINA.Tabla4 WHERE campoM = %s AND campoN = %s'),
+    'Consulta 5': ('Consulta 5 - Descripción', 'SELECT * FROM DM_ESTRAYFINA.Tabla5 WHERE campoAlpha = %s AND campoBeta = %s'),
+    'Consulta 6': ('Consulta 6 - Descripción', 'SELECT * FROM DM_ESTRAYFINA.Tabla6 WHERE campoI = %s AND campoII = %s'),
+}
+
+
+
 # Vista de inicio de sesión
 def login(request):
     if request.method == 'POST':
@@ -37,6 +50,7 @@ def login(request):
 
     return render(request, 'db_query/login.html')
 
+
 # Vista para listar tablas
 def mi_vista(request):
     try:
@@ -45,12 +59,41 @@ def mi_vista(request):
     except OperationalError:
         return redirect('login')  # Redirigir a login si no hay conexión
 
-    with connections['default'].cursor() as cursor:
-        cursor.execute("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_SCHEMA = 'DM_ESTRAYFINA';")
-        resultados = cursor.fetchall()
+    # Obtener las tablas
+    tablas = obtener_tablas()  # Asegúrate de que esta función está correctamente implementada
 
-    tablas = [resultado[0] for resultado in resultados]
-    return render(request, 'db_query/homeQuery.html', {'tablas': tablas})
+    # Pasar las tablas y consultas predefinidas al renderizar la plantilla
+    return render(request, 'db_query/homeQuery.html', {
+        'tablas': tablas,
+        'predefined_queries': PREDEFINED_QUERIES
+    })
+
+
+
+def procesar_consulta_predefinida(request):
+    if request.method == 'POST':
+        consulta = request.POST.get('consulta')
+        param1 = request.POST.get('parametro1')
+        param2 = request.POST.get('parametro2')
+
+        if consulta and param1 and param2:  # Ensure all parameters are provided
+            query = PREDEFINED_QUERIES[consulta][1]  # Get the SQL query
+            try:
+                with connections['default'].cursor() as cursor:
+                    cursor.execute(query, [param1, param2])
+                    rows = cursor.fetchall()
+
+                # Create a DataFrame
+                df = pd.DataFrame(rows, columns=[col[0] for col in cursor.description])
+                response = HttpResponse(content_type='text/csv')
+                response['Content-Disposition'] = f'attachment; filename="{consulta}_data.csv"'
+                df.to_csv(path_or_buf=response, index=False)
+                return response
+            except Exception as e:
+                logger.error(f"Error al procesar consulta predefinida: {e}")
+                return redirect('mi_vista')
+
+    return redirect('mi_vista')
 
 # Vista para consultar campos
 def consultar_campos(request):
@@ -127,3 +170,5 @@ def procesar_campos(request):
             return redirect('mi_vista')
 
     return redirect('mi_vista')
+
+

@@ -15,7 +15,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from db_query.views import mi_vista, consultar_campos, procesar_campos, login
+from db_query.views import mi_vista, consultar_campos, procesar_campos, login, procesar_consulta_predefinida
 
 
 urlpatterns = [
@@ -24,4 +24,5 @@ urlpatterns = [
     path('table-list/', mi_vista, name='mi_vista'),
     path('consultar-campos/', consultar_campos, name='consultar_campos'),
     path('procesar-campos/', procesar_campos, name='procesar_campos'),
+    path('procesar_consulta_predefinida/', procesar_consulta_predefinida, name='procesar_consulta_predefinida'),
 ]
