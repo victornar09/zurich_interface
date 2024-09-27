@@ -1,22 +1,20 @@
-
 from django.shortcuts import redirect
+from django.urls import resolve, Resolver404
 from django.urls import reverse
-from django.http import Http404
 
-
-class LoginRequiredMiddleware:
+class CheckUrlMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        public_urls = [reverse('login')]  # Asegúrate de que 'login' es el nombre correcto de tu vista de login
+        login_url = reverse('login')  # Asegúrate de que 'login' es el nombre correcto de tu vista de login
 
-        # Permitir acceso a la URL de login
-        if request.path in public_urls:
-            return self.get_response(request)
+        # Verificar si la URL está definida en urls.py
+        try:
+            resolve(request.path)
+        except Resolver404:
+            # Redirigir a la página de login si la URL no está definida
+            return redirect(login_url)
 
-        # Comprobar si el usuario está autenticado
-        if not request.user.is_authenticated:
-            return redirect('login')  # Redirigir a la vista de login
-
+        # Continuar con la respuesta si la URL es válida
         return self.get_response(request)

@@ -48,7 +48,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'db_query.middleware.LoginRequiredMiddleware',
+    'db_query.middleware.CheckUrlMiddleware',
 ]
 
 ROOT_URLCONF = 'zurich_interface.urls'
@@ -78,11 +78,11 @@ WSGI_APPLICATION = 'zurich_interface.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'sql_server.pyodbc',
-        'NAME': 'DW-AEU-ECP-DEV-MAIN',
-        'USER': 'soportebigdatafactory',
-        'PASSWORD': 'N8w6U0vCLr4KrMQFkLZQwu',
-        'HOST': 'dsaeuecpdevbigdatafab.database.windows.net',
-        'PORT': '1433',
+        'NAME': '',
+        'USER': '',
+        'PASSWORD': '',
+        'HOST': '',
+        'PORT': '',
         'OPTIONS': {
             'driver': 'ODBC Driver 17 for SQL Server',
             'disable_migrations': True,
@@ -152,3 +152,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 #         },
 #     },
 # }
+
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'

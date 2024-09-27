@@ -149,8 +149,9 @@
 
 <!-- homeQuery.html -->
 
-<h2>Consultas Predefinidas</h2>
+
 <form method="POST" action="{% url 'procesar_consulta_predefinida' %}">
+    <h2>Consultas Predefinidas</h2>
     {% csrf_token %}
     <div>
         <label for="consultaSelect">Selecciona una consulta:</label>

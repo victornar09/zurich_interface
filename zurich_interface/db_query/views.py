@@ -2,34 +2,44 @@ import pandas as pd
 from django.shortcuts import render, redirect
 from django.db import connections, OperationalError
 from django.http import HttpResponse
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import login as auth_login
+from django.contrib.auth.models import User
+
 import logging
 
 logger = logging.getLogger(__name__)
 
 
 # Modificar las consultas predefinidas para incluir nombres legibles
-PREDEFINED_QUERIES = {
-    'Consulta 1': ('Consulta 1 - Descripción', 'SELECT * FROM DM_ESTRAYFINA.Tabla1 WHERE campo1 = %s AND campo2 = %s'),
-    'Consulta 2': ('Consulta 2 - Descripción', 'SELECT * FROM DM_ESTRAYFINA.Tabla2 WHERE campoA = %s AND campoB = %s'),
-    'Consulta 3': ('Consulta 3 - Descripción', 'SELECT * FROM DM_ESTRAYFINA.Tabla3 WHERE campoX = %s AND campoY = %s'),
-    'Consulta 4': ('Consulta 4 - Descripción', 'SELECT * FROM DM_ESTRAYFINA.Tabla4 WHERE campoM = %s AND campoN = %s'),
-    'Consulta 5': ('Consulta 5 - Descripción', 'SELECT * FROM DM_ESTRAYFINA.Tabla5 WHERE campoAlpha = %s AND campoBeta = %s'),
-    'Consulta 6': ('Consulta 6 - Descripción', 'SELECT * FROM DM_ESTRAYFINA.Tabla6 WHERE campoI = %s AND campoII = %s'),
-}
+def obtener_consultas_predefinidas():
+    queries = {}
+    
+    try:
+        with connections['default'].cursor() as cursor:
+            cursor.execute("SELECT id, nombre_consulta, query FROM DM_ESTRAYFINA.TEMP_QUERYS_ELIMINAR")
+            rows = cursor.fetchall()
 
+            for row in rows:
+                id_query = row[0]  # id
+                nombre_consulta = row[1]  # nombre_consulta
+                query = row[2]  # query
+                queries[nombre_consulta] = (nombre_consulta, query)
+    except Exception as e:
+        logger.error(f"Error al obtener consultas predefinidas: {e}")
 
-
-# Vista de inicio de sesión
+    return queries
+# Login view
 def login(request):
     if request.method == 'POST':
         host = request.POST['host']
         database = request.POST['database']
         user = request.POST['user']
         password = request.POST['password']
-        port = request.POST.get('port', '1433')  # Usar 1433 por defecto si no se proporciona
+        port = request.POST.get('port', '1433')
 
         try:
-            connections['default'].close()  # Cerrar la conexión actual si hay alguna
+            connections['default'].close()
             connections['default'].settings_dict.update({
                 'ENGINE': 'sql_server.pyodbc',
                 'HOST': host,
@@ -42,17 +52,21 @@ def login(request):
                     'disable_migrations': True,
                 },
             })
-            connections['default'].connect()  # Conectar a la nueva base de datos
-            logger.info("Conexión exitosa a la base de datos.")
-            return redirect('mi_vista')  # Redirigir a la vista de tablas
+
+            connections['default'].connect()
+            #request.session['db_connected'] = True
+            # Here, you might want to create or authenticate a user session
+            # For demo purposes, we will just redirect to the main view
+            return redirect('mi_vista')
         except OperationalError:
             return render(request, 'db_query/login.html', {'error': 'Error en la conexión a la base de datos.'})
 
     return render(request, 'db_query/login.html')
 
 
-# Vista para listar tablas
+# # Vista para listar tablas
 def mi_vista(request):
+    
     try:
         # Intenta conectar antes de verificar si es usable
         connections['default'].connect()
@@ -62,41 +76,70 @@ def mi_vista(request):
     # Obtener las tablas
     tablas = obtener_tablas()  # Asegúrate de que esta función está correctamente implementada
 
+    predefined_queries = obtener_consultas_predefinidas()
+
+    #print(predefined_queries)
     # Pasar las tablas y consultas predefinidas al renderizar la plantilla
     return render(request, 'db_query/homeQuery.html', {
         'tablas': tablas,
-        'predefined_queries': PREDEFINED_QUERIES
+        'predefined_queries': predefined_queries
     })
 
 
 
 def procesar_consulta_predefinida(request):
+    try:
+        # Intenta conectar antes de verificar si es usable
+        connections['default'].connect()
+    except OperationalError:
+        return redirect('login')
+
     if request.method == 'POST':
         consulta = request.POST.get('consulta')
         param1 = request.POST.get('parametro1')
         param2 = request.POST.get('parametro2')
 
-        if consulta and param1 and param2:  # Ensure all parameters are provided
-            query = PREDEFINED_QUERIES[consulta][1]  # Get the SQL query
-            try:
-                with connections['default'].cursor() as cursor:
-                    cursor.execute(query, [param1, param2])
-                    rows = cursor.fetchall()
+        print(consulta, param1, param2)
 
-                # Create a DataFrame
-                df = pd.DataFrame(rows, columns=[col[0] for col in cursor.description])
-                response = HttpResponse(content_type='text/csv')
-                response['Content-Disposition'] = f'attachment; filename="{consulta}_data.csv"'
-                df.to_csv(path_or_buf=response, index=False)
-                return response
-            except Exception as e:
-                logger.error(f"Error al procesar consulta predefinida: {e}")
+        if consulta and param1 and param2:  # Asegúrate de que se proporcionen todos los parámetros
+            # Obtén las consultas predefinidas nuevamente en caso de que no esté disponible
+            predefined_queries = obtener_consultas_predefinidas()
+            
+            if consulta in predefined_queries:  # Verifica si la consulta es válida
+                query = predefined_queries[consulta][1]
+                print(query)  # Obtén la consulta SQL
+                try:
+                    with connections['default'].cursor() as cursor:
+
+                        cursor.execute(query, [param1, param2])
+                        rows = cursor.fetchall()
+                        descripcion = [col[0] for col in cursor.description]
+                        print(type(descripcion), descripcion)
+
+                    # Crea un DataFrame
+                    df = pd.DataFrame(rows, columns=descripcion)
+                    response = HttpResponse(content_type='text/csv')
+                    response['Content-Disposition'] = f'attachment; filename="{consulta}_data.csv"'
+                    df.to_csv(path_or_buf=response, index=False)
+                    return response
+                except Exception as e:
+                    logger.error(f"Error al procesar consulta predefinida: {e}")
+                    return redirect('mi_vista')
+            else:
+                logger.error(f"Consulta no válida: {consulta}")
                 return redirect('mi_vista')
 
     return redirect('mi_vista')
 
 # Vista para consultar campos
 def consultar_campos(request):
+
+    try:
+        # Intenta conectar antes de verificar si es usable
+        connections['default'].connect()
+    except OperationalError:
+        return redirect('login')
+
     campos = []
     tabla_seleccionada = None
 
@@ -112,6 +155,8 @@ def consultar_campos(request):
 
 # Función para obtener tablas
 def obtener_tablas():
+
+
     with connections['default'].cursor() as cursor:
         cursor.execute("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_SCHEMA = 'DM_ESTRAYFINA';")
         resultados = cursor.fetchall()
@@ -151,8 +196,6 @@ def procesar_campos(request):
 
         if filtros:
             consulta += " WHERE " + " ".join(filtros)
-
-        print(consulta)
 
         try:
             with connections['default'].cursor() as cursor:
